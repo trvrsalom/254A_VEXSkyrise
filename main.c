@@ -1,3 +1,8 @@
+/*
+	Robot code for 254A - VEX Skyrise
+
+	v1.1 9/15/14
+*/
 #pragma config(I2C_Usage, I2C1, i2cSensors)
 #pragma config(Sensor, in1,    gyro,           sensorGyro)
 #pragma config(Sensor, I2C_1,  erF,            sensorQuadEncoderOnI2CPort,    , AutoAssign)
@@ -23,10 +28,10 @@
 
 #include "Vex_Competition_Includes.c"   //Main competition background code...do not modify!
 
-#include "subsystems/driveControl.h"
-#include "subsystems/liftControl.h"
-#include "auto/gameAuto.h"
-#include "auto/programmingSkills.h"
+#include "driveControl.h"
+#include "liftControl.h"
+#include "gameAuto.h"
+#include "programmingSkills.h"
 
 void pre_auton()
 {
