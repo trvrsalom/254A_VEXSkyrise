@@ -18,19 +18,26 @@
 
 #include "Vex_Competition_Includes.c"   //Main competition background code...do not modify!
 
-float driveKu = 1.2;
 float driveKp = 1.2;
 float driveKi = 0.0;
 float driveKd = 0.0;
 
+int forward;
+int right;
+int clockwise;
+
 int ignoreDriveError = 1;
 int driveErrorMax = 40;
 
-float integralA = 0;
-float integralB = 0;
+float integralLF = 0;
+float integralLB = 0;
+float integralRF = 0;
+float integralRB = 0;
 
-int prevErrorA = 0;
-int prevErrorB = 0;
+int prevErrorLF = 0;
+int prevErrorLB = 0;
+int prevErrorRF = 0;
+int prevErrorRB = 0;
 
 void clearEncoders () {
 	nMotorEncoder[rB] = 0;
@@ -39,51 +46,74 @@ void clearEncoders () {
 	nMotorEncoder[lB] = 0;
 }
 
+
 task drivePID() {
 	while(true) {
-		//PID for motor set A ++++++++++++++++++++++
-		int rfTicks = nMotorEncoder[rF];
-		int lbTicks = nMotorEncoder[lB];
+		int ticksRF = nMotorEncoder[rF];
+		int ticksLB = nMotorEncoder[lB];
+		int ticksLF = nMotorEncoder[lF];
+		int ticksRB = nMotorEncoder[rB];
 		
-		int errorA = rfTicks - lbTicks;
+		int targetRB = forward - clockwise + right;
+		int targetLB = forward + clockwise - right;
+		int targetRF = forward - clockwise - right;
+		int targetLF = forward + clockwise + right;
 		
-		integralA += errorA;
+		int errorRB = targetRB - ticksRB;
+		int errorLB = targetLB - ticksLB;
+		int errorRF = targetRF - ticksRF;
+		int errorLF = targetLF - ticksLF;
 		
-		if (abs(errorA) < ignoreDriveError) {
-			integralA = 0;
+		integralRB = errorRB;
+		integralLB = errorLB;
+		integralRF = errorRF;
+		integralLF = errorLF;
+		
+		if(abs(integralRB) < ignoreDriveError) {
+			integralRB = 0;
+		}
+		if(abs(integralRB) > driveErrorMax) {
+			integralRB = 0;
 		}
 		
-		if (abs(errorA) > driveErrorMax) {
-			integralA = 0;
+		
+		if(abs(integralRF) < ignoreDriveError) {
+			integralRF = 0;
+		}
+		if(abs(integralRF) > driveErrorMax) {
+			integralRF = 0;	
 		}
 		
-		int derivativeA = errorA - prevErrorA;
 		
-		prevErrorA = errorA;
-		
-		motor[lB] = driveKp * errorA + driveKi * integralA + driveKd * derivativeA;
-		
-		//PID for motor set B ++++++++++++++++++++++
-		int lfTicks = nMotorEncoder[lF];
-		int rbTicks = nMotorEncoder[rB];
-		
-		int errorB = lfTicks - rbTicks;
-		
-		integralB += errorB;
-		
-		if (abs(errorB) < ignoreDriveError) {
-			integralB = 0;
+		if(abs(integralLB) < ignoreDriveError) {
+			integralLB = 0;
+		}
+		if(abs(integralLB) > driveErrorMax) {
+			integralLB = 0;
 		}
 		
-		if (abs(errorB) > driveErrorMax) {
-			integralB = 0;
+		
+		if(abs(integralLF) < ignoreDriveError) {
+			integralLF = 0;
+		}
+		if(abs(integralLF) > driveErrorMax) {
+			integralLF = 0;
 		}
 		
-		int derivativeB = errorB - prevErrorB;
+		int derivativeRF = errorRF - prevErrorRF;
+		int derivativeRB = errorRB - prevErrorRB;
+		int derivativeLF = errorLF - prevErrorLF;
+		int derivativeLB = errorLB - prevErrorLB;
 		
-		prevErrorB = errorB;
+		prevErrorRF = errorRF;
+		prevErrorRB = errorRB;
+		prevErrorLB = errorLB;
+		prevErrorLF = errorLF;
 		
-		motor[rB] = driveKp * errorB + driveKi * integralB + driveKd * derivativeB;
+		motor[rF] = driveKp * errorRF + driveKi * integralRF + driveKd * derivativeRF;
+		motor[rB] = driveKp * errorRB + driveKi * integralRB + driveKd * derivativeRB;
+		motor[lF] = driveKp * errorLF + driveKi * integralLF + driveKd * derivativeLF;
+		motor[lB] = driveKp * errorLB + driveKi * integralLB + driveKd * derivativeLB;
 	}
 }
 
@@ -141,7 +171,13 @@ task usercontrol()
 	
 	while (true)
 	{
-	  motor[lF] = vexRT[Ch3]+vexRT[Ch1]+vexRT[Ch4];
-	  motor[rF] = vexRT[Ch3]-vexRT[Ch1]-vexRT[Ch4];
+	  
+	  //Simple PID free drive for testing
+	  /*
+	  	motor[rB] = forward - clockwise + right;
+		motor[lB] = forward + clockwise - right;
+		motor[rF] = forward - clockwise - right;
+		motor[lF] = forward + clockwise + right;
+	 /**/
 	}
 }
