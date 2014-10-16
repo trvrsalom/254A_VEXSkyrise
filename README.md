@@ -11,11 +11,10 @@ v1.1 | Added Readme & fixed file includes for RobotC 4.0
 v2.0 | Removed unnecessary files, and added bad PID
 v2.1 | Added function to control PID in inches
 
-Todo:
+******
 
-Tune PID
-
-Implement Better Intake Control
-
-Start on getting autonomous done.
-
+**Todo:**
+*Tune PID
+*Autonomous
+*Programming Skills
+*Intake Control
