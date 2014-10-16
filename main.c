@@ -22,12 +22,14 @@
 
 #include "Vex_Competition_Includes.c"   //Main competition background code...do not modify!
 
+int encoderTicks = 392;
+
 float driveKp = 1.2;
 float driveKi = 0.0;
 float driveKd = 0.0;
 
-int forward;
-int right;
+int fwd;
+int strafe;
 int clockwise;
 
 int ignoreDriveError = 1;
@@ -43,6 +45,7 @@ int prevErrorLB = 0;
 int prevErrorRF = 0;
 int prevErrorRB = 0;
 
+//Reset All Encoders
 void clearEncoders () {
 	nMotorEncoder[rB] = 0;
 	nMotorEncoder[rF] = 0;
@@ -50,9 +53,35 @@ void clearEncoders () {
 	nMotorEncoder[lB] = 0;
 }
 
+//Set Arm Power
 void armPo(int power) {
-		motor[lru] = motor[lrd] = motor[llu] = motor[lld] = power;
+	motor[lru] = motor[lrd] = motor[llu] = motor[lld] = power;
 }
+
+//Set target value in ticks
+void driveTicks(int fwdDrive, int rDrive, int rotateDrive)
+{
+	fwd = fwdDrive*sqrt(2);
+	strafe = rDrive*sqrt(2);
+	clockwise = rotateDrive*sqrt(2);
+}
+
+//Set drive target in inches
+void driveIn(int fwdDrive, int rDrive, int rotateDrive)
+{
+	float fakefwd = (fwdDrive*sqrt(2)*4*PI)/encoderTicks;
+	float fakeright = (rDrive*sqrt(2)*4*PI)/encoderTicks;
+	fwd = fakefwd;
+	strafe = fakeright;
+	clockwise = rotateDrive;
+}
+
+//PID for arm
+task armPID() {
+
+}
+
+//PID for drive
 task drivePID() {
 	while(true) {
 		int ticksRF = nMotorEncoder[rF];
@@ -60,10 +89,10 @@ task drivePID() {
 		int ticksLF = nMotorEncoder[lF];
 		int ticksRB = nMotorEncoder[rB];
 
-		int targetRB = forward - clockwise + right;
-		int targetLB = forward + clockwise - right;
-		int targetRF = forward - clockwise - right;
-		int targetLF = forward + clockwise + right;
+		int targetRB = fwd - clockwise + strafe;
+		int targetLB = fwd + clockwise - strafe;
+		int targetRF = fwd - clockwise - strafe;
+		int targetLF = fwd + clockwise + strafe;
 
 		int errorRB = targetRB - ticksRB;
 		int errorLB = targetLB - ticksLB;
@@ -134,9 +163,9 @@ task drivePID() {
 
 void pre_auton()
 {
-  // Set bStopTasksBetweenModes to false if you want to keep user created tasks running between
-  // Autonomous and Tele-Op modes. You will need to manage all user created tasks if set to false.
-  bStopTasksBetweenModes = true;
+	// Set bStopTasksBetweenModes to false if you want to keep user created tasks running between
+	// Autonomous and Tele-Op modes. You will need to manage all user created tasks if set to false.
+	bStopTasksBetweenModes = true;
 
 	// All activities that occur before the competition starts
 	// Example: clearing encoders, setting servo positions, ...
@@ -153,9 +182,9 @@ void pre_auton()
 
 task autonomous()
 {
-  // .....................................................................................
-  // Insert user code here.
-  // .....................................................................................
+	// .....................................................................................
+	// Insert user code here.
+	// .....................................................................................
 
 	AutonomousCodePlaceholderForTesting();  // Remove this function call once you have "real" code.
 }
@@ -169,6 +198,7 @@ task autonomous()
 //
 /////////////////////////////////////////////////////////////////////////////////////////
 int battVoltage;
+
 task usercontrol()
 {
 	// User control code here, inside the loop
@@ -178,9 +208,9 @@ task usercontrol()
 	while (true)
 	{
 		battVoltage = nImmediateBatteryLevel/1000.0;
-		forward = forward/sqrt(2)+vexRT[Ch3];
-		right = right/sqrt + vexRT[Ch4];
-		clockwise = clockwise + vexRT[Ch1];
+		fwd = vexRT[Ch3];
+		strafe = vexRT[Ch4];
+		clockwise = vexRT[Ch1];
 
 		if(vexRT[Btn6U] == 1) {
 			armPo(127);
@@ -191,12 +221,13 @@ task usercontrol()
 		else {
 			armPo(0);
 		}
-	  //Simple PID free drive for testing
-	  /*
-	  	motor[rB] = forward - clockwise + right;
-		motor[lB] = forward + clockwise - right;
-		motor[rF] = forward - clockwise - right;
-		motor[lF] = forward + clockwise + right;
-	 /**/
+
+		//Simple PID free drive for testing
+		/*
+		motor[rB] = fwd - clockwise + right;
+		motor[lB] = fwd + clockwise - right;
+		motor[rF] = fwd - clockwise - right;
+		motor[lF] = fwd + clockwise + right;
+		/**/
 	}
 }

@@ -9,6 +9,7 @@ Version | Description
 v1.0 | Real initial commit
 v1.1 | Added Readme & fixed file includes for RobotC 4.0
 v2.0 | Removed unnecessary files, and added bad PID
+v2.1 | Added function to control PID in inches
 
 Todo:
 
