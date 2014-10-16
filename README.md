@@ -14,7 +14,7 @@ v2.1 | Added function to control PID in inches
 ******
 
 **Todo:**
-*Tune PID
-*Autonomous
-*Programming Skills
-*Intake Control
+* Tune PID
+* Autonomous
+* Programming Skills
+* Intake Control
