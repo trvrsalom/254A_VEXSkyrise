@@ -13,7 +13,7 @@ v2.1 | Added function to control PID in inches
 v3.0 | Lift is working and PID is in place, but still buggy
 v4.0 | Driver PID working, still untuned.
 
-******
+==========
 
 **Todo:**
 * Tune PID
