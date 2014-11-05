@@ -3,9 +3,9 @@
 #pragma config(Sensor, I2C_2,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
 #pragma config(Sensor, I2C_3,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
 #pragma config(Sensor, I2C_4,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
-#pragma config(Motor,  port1,           rB,            tmotorVex393_HBridge, openLoop, encoderPort, I2C_1)
+#pragma config(Motor,  port1,           rB,            tmotorVex393_HBridge, openLoop, reversed, encoderPort, I2C_1)
 #pragma config(Motor,  port2,           lF,            tmotorVex393_MC29, openLoop, encoderPort, I2C_3)
-#pragma config(Motor,  port3,           rF,            tmotorVex393_MC29, openLoop, reversed, encoderPort, I2C_2)
+#pragma config(Motor,  port3,           rF,            tmotorVex393_MC29, openLoop, encoderPort, I2C_2)
 #pragma config(Motor,  port4,           lru,           tmotorVex393_MC29, openLoop, reversed)
 #pragma config(Motor,  port5,           lrd,           tmotorVex393_MC29, openLoop, reversed)
 #pragma config(Motor,  port6,           llu,           tmotorVex393_MC29, openLoop, reversed)
@@ -24,7 +24,7 @@
 
 int encoderTicks = 392;
 
-int deadZone = 20;
+int deadZone = 50;
 
 float driveKp = 5.0;
 float driveKi = 0.0;
@@ -187,16 +187,11 @@ void pre_auton()
 
 task autonomous()
 {
-	// .....................................................................................
-	// Insert user code here.
-	// .....................................................................................
-
-	AutonomousCodePlaceholderForTesting();  // Remove this function call once you have "real" code.
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
-//                                 User Control Task
+//                                 User CodriveInol Task
 //
 // This task is used to control your robot during the user control phase of a VEX Competition.
 // You must modify the code to add your own robot specific commands here.
@@ -226,14 +221,45 @@ task usercontrol()
 			motor[rF] = vexRT[Ch3] - vexRT[Ch1] - vexRT[Ch4];
 			motor[lF] = vexRT[Ch3] + vexRT[Ch1] + vexRT[Ch4];
 		}*/
-		fwd = vexRT[Ch3];
-		strafe = vexRT[Ch4];
-		clockwise = vexRT[Ch1];/*
+		if(abs(vexRT[Ch3]) > deadZone) 
+		{
+			fwd = vexRT[Ch3];
+		}
+		else {
+			fwd = 0;
+			nMotorEncoder[lB] = 0;
+			nMotorEncoder[lF] = 0;
+			nMotorEncoder[rB] = 0;
+			nMotorEncoder[rF] = 0;
+		}		
+		if(abs(vexRT[Ch4]) > deadZone)
+		{
+			strafe = vexRT[Ch4];
+		}
+		else {
+			strafe = 0;
+			nMotorEncoder[lB] = 0;
+			nMotorEncoder[lF] = 0;
+			nMotorEncoder[rB] = 0;
+			nMotorEncoder[rF] = 0;
+		}
+		if(abs(vexRT[Ch1]) > deadZone)
+		{
+			clockwise =  vexRT[Ch1];
+		}
+		else {
+			clockwise = 0;
+			nMotorEncoder[lB] = 0;
+			nMotorEncoder[lF] = 0;
+			nMotorEncoder[rB] = 0;
+			nMotorEncoder[rF] = 0;
+		}
+		/*
 		motor[rB] = vexRT[Ch3] - vexRT[Ch1] + vexRT[Ch4];
-		motor[lB] = vexRT[Ch3] + vexRT[Ch1] - vexRT[Ch4];/
+		motor[lB] = vexRT[Ch3] + vexRT[Ch1] - vexRT[Ch4];
 		motor[rF] = vexRT[Ch3] - vexRT[Ch1] - vexRT[Ch4];
-		motor[lF] = vexRT[Ch3] + vexRT[Ch1] + vexRT[Ch4];*
-			
+		motor[lF] = vexRT[Ch3] + vexRT[Ch1] + vexRT[Ch4];*/
+
 		if(vexRT[Btn6U] == 1) {
 			armPo(127);
 		}
