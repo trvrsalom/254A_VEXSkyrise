@@ -1,9 +1,15 @@
 #pragma config(I2C_Usage, I2C1, i2cSensors)
+#pragma config(Sensor, in1,    lineFollowFWD,  sensorLineFollower)
+#pragma config(Sensor, in2,    lineFollowCENTER, sensorLineFollower)
+#pragma config(Sensor, in3,    lineFollowBACK, sensorLineFollower)
+#pragma config(Sensor, in4,    lineFollowEnd,  sensorLineFollower)
+#pragma config(Sensor, dgtl1,  inEncoder,      sensorQuadEncoder)
+#pragma config(Sensor, dgtl3,  bottomLimit,    sensorTouch)
 #pragma config(Sensor, I2C_1,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
 #pragma config(Sensor, I2C_2,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
 #pragma config(Sensor, I2C_3,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
 #pragma config(Sensor, I2C_4,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
-#pragma config(Motor,  port1,           rB,            tmotorVex393_HBridge, openLoop, reversed, encoderPort, I2C_1)
+#pragma config(Motor,  port1,           rB,            tmotorVex393_HBridge, openLoop, encoderPort, I2C_1)
 #pragma config(Motor,  port2,           lF,            tmotorVex393_MC29, openLoop, encoderPort, I2C_3)
 #pragma config(Motor,  port3,           rF,            tmotorVex393_MC29, openLoop, encoderPort, I2C_2)
 #pragma config(Motor,  port4,           lru,           tmotorVex393_MC29, openLoop, reversed)
@@ -22,11 +28,23 @@
 #pragma userControlDuration(120)
 
 #include "Vex_Competition_Includes.c"   //Main competition background code...do not modify!
+#include "gameAuto.h"
+
 int rfMult = -1;
 int lfMult = -1;
 int encoderTicks = 392;
 
 int deadZone = 50;
+
+bool hasLockedIn = false;
+float inKp = 5.0;
+float inKi = 3.2;
+float inKd = 0.0;
+int ignoreInError = 1;
+int inErrorMax = 40;
+float integralIn = 0;
+int prevErrorIn = 0;
+int errorIn = 0;
 
 float driveKp = 1.0;
 float driveKi = 0.0;
@@ -49,6 +67,8 @@ int prevErrorLB = 0;
 int prevErrorRF = 0;
 int prevErrorRB = 0;
 
+int tickIncrease = 20;
+int inTarget = SensorValue[inEncoder];
 //Reset All Encoders
 void clearEncoders () {
 	nMotorEncoder[rB] = 0;
@@ -59,6 +79,7 @@ void clearEncoders () {
 void inPo (int power) {
 	motor[in] = power;
 }
+
 //Set Arm Power
 void armPo(int power) {
 	motor[lru] = motor[lrd] = motor[llu] = motor[lld] = power;
@@ -103,9 +124,9 @@ task drivePID() {
 		int targetRF = fwd - clockwise - strafe;
 		int targetLF = fwd + clockwise + strafe;
 
-		errorRB = targetRB - ticksRB;
+		errorRB = targetRB + ticksRB;
 		errorLB = targetLB - ticksLB;
-		errorRF = targetRF - ticksRF;
+		errorRF = targetRF + ticksRF;
 		errorLF = targetLF - ticksLF;
 
 		integralRB = errorRB;
@@ -154,10 +175,32 @@ task drivePID() {
 		prevErrorLB = errorLB;
 		prevErrorLF = errorLF;
 		writeDebugStreamLine("%f,%f",-1*(driveKp * errorLF + driveKi * integralLF + driveKd * derivativeLF), -1*(driveKp * errorRF + driveKi * integralRF + driveKd * derivativeRF));
-		motor[rF] = rFMult*(driveKp * errorRF + driveKi * integralRF + driveKd * derivativeRF);
-		motor[rB] = -1*(driveKp * errorRB + driveKi * integralRB + driveKd * derivativeRB);
-		motor[lF] = lfMult*(driveKp * errorLF + driveKi * integralLF + driveKd * derivativeLF);
-		motor[lB] = 1*(driveKp * errorLB + driveKi * integralLB + driveKd * derivativeLB);
+		motor[rF] = (driveKp * errorRF + driveKi * integralRF + driveKd * derivativeRF);
+		motor[rB] = (driveKp * errorRB + driveKi * integralRB + driveKd * derivativeRB);
+		motor[lF] = (driveKp * errorLF + driveKi * integralLF + driveKd * derivativeLF);
+		motor[lB] = (driveKp * errorLB + driveKi * integralLB + driveKd * derivativeLB);
+	}
+}
+int ticksIn = SensorValue[inEncoder];
+//PID for intake
+task intakePID() {
+	while(true) {
+		ticksIn = SensorValue[inEncoder];
+		errorIn = inTarget - ticksIn;
+		integralIn = errorIn;
+
+		if(abs(integralIn) < ignoreDriveError) {
+			integralIn = 0;
+		}
+		if(abs(integralIn) > driveErrorMax) {
+			integralIn = 0;
+		}
+		int derivativeIn = errorIn - prevErrorIn;
+
+		prevErrorIn = errorIn;
+
+		motor[in] = (inKp * errorIn + inKi * integralIn + inKd * derivativeIn);
+
 	}
 }
 //HI MIGGY
@@ -191,11 +234,10 @@ void pre_auton()
 
 task autonomous()
 {
-	rfMult = -1;
-	lfMult = -1;
+	redSkyrise();
 	startTask(drivePID);
 	//driveIn(-10, 0, 0);
-	fwd = 1000;
+	fwd = -1000;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -215,6 +257,7 @@ task usercontrol()
 	rfMult = 1;
 	lfMult = 1;
 	startTask(drivePID);
+	startTask(intakePID);
 
 	while (true)
 	{
@@ -280,14 +323,18 @@ task usercontrol()
 		else {
 			armPo(0);
 		}
+
 		if(vexRT[Btn6U] == 1) {
-			inPo(-127);
+			inTarget = ticksIn + tickIncrease;
+			hasLockedIn = false;
 		}
 		else if(vexRT[Btn6D] == 1) {
-			inPo(127);
+			inTarget = ticksIn - tickIncrease;
+			hasLockedIn = false;
 		}
-		else {
-			inPo(0);
+		else if(!hasLockedIn) {
+			inTarget = ticksIn;
+			hasLockedIn = true;
 		}
 		//Simple PID free drive for testing
 		/*
