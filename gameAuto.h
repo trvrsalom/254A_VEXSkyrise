@@ -6,26 +6,29 @@ void encoderClear () {
 }
 
 void redSkyrise () {
-	int threshold = 505;
+	motor[in] = 127;
+	wait1Msec(500);
+	motor[in] = 0;
+	int threshold = 200;
 	bool hasReached = false;
-	while (!hasReached) {
-		if(SensorValue[lineFollowCENTER] > threshold) {
-			motor[lB] = -64;
-			motor[rB] = 64;
-			motor[lF] = 64;
-			motor[rF] = -64;
+	while (/*!hasReached*/ true) {
+		if(SensorValue[lineFollowBack] > threshold && SensorValue[lineFollowFWD] > threshold) {
+			motor[RB] = +50;
+			motor[LB] = -50;
+			motor[RF] = -50;
+			motor[LF] = +50;
 		}
-		else if(SensorValue[lineFollowFWD] > threshold) {
-			motor[lB] = -50;
-			motor[rB] = 50;
-			motor[lF] = 78;
-			motor[rF] = -78;
+		else if(SensorValue[lineFollowBack] < threshold) {
+			motor[RB] = +40;
+			motor[LB] = -40;
+			motor[RF] = -60;
+			motor[LF] = +60;
 		}
-		else if(SensorValue[lineFollowBACK] > threshold) {
-			motor[lB] = -78;
-			motor[rB] = 78;
-			motor[lF] = 50;
-			motor[rF] = -50;
+		else if(SensorValue[lineFollowFWD] < threshold) {
+			motor[RB] = +60;
+			motor[LB] = -60;
+			motor[RF] = -40;
+			motor[LF] = +40;
 		}
 		if(SensorValue[lineFollowEND] > threshold) {
 			hasReached = true;
