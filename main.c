@@ -5,6 +5,7 @@
 #pragma config(Sensor, in4,    lineFollowEnd,  sensorLineFollower)
 #pragma config(Sensor, dgtl1,  inEncoder,      sensorQuadEncoder)
 #pragma config(Sensor, dgtl3,  bottomLimit,    sensorTouch)
+#pragma config(Sensor, dgtl4,  lEncoder,       sensorQuadEncoder)
 #pragma config(Sensor, I2C_1,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
 #pragma config(Sensor, I2C_2,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
 #pragma config(Sensor, I2C_3,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
@@ -35,17 +36,27 @@ int rfMult = -1;
 int lfMult = -1;
 int encoderTicks = 392;
 
-int deadZone = 50;
+int deadZone = 15;
 
 bool hasLockedIn = false;
-float inKp = 5.0;
-float inKi = 3.2;
+float inKp = 5.5;
+float inKi = 0.0;
 float inKd = 0.0;
 int ignoreInError = 1;
 int inErrorMax = 40;
 float integralIn = 0;
 int prevErrorIn = 0;
 int errorIn = 0;
+
+bool hasLockedLift = false;
+float liftKp = 3.5;
+float liftKi = 0.0;
+float liftKd = 0.0;
+int ignoreliftError = 1;
+int liftErrorMax = 40;
+float integralLift = 0;
+int prevErrorLift = 0;
+int errorLift = 0;
 
 float driveKp = 1.0;
 float driveKi = 0.0;
@@ -70,12 +81,22 @@ int prevErrorRB = 0;
 
 int tickIncrease = 20;
 int inTarget = SensorValue[inEncoder];
-//Reset All Encoders
+//Reset All Encoder
+double lx() {
+	return (vexRT[ch4]^3)/(127^2);
+}
+double ly() {
+	return (vexRT[ch3]^3)/(127^2);
+}
+double rx() {
+	return (vexRT[ch1]^3)/(127^2);
+}
 void clearEncoders () {
 	nMotorEncoder[rB] = 0;
 	nMotorEncoder[rF] = 0;
 	nMotorEncoder[lF] = 0;
 	nMotorEncoder[lB] = 0;
+	sensorValue[lEncoder] = 0;
 }
 void inPo (int power) {
 	motor[in] = power;
@@ -104,6 +125,9 @@ void driveIn(int fwdDrive, int rDrive, int rotateDrive)
 	clockwise = rotateDrive;
 }
 
+void setHook(int po) {
+		motor[hook] = po;
+}
 //PID for arm
 task armPID() {
 
@@ -204,7 +228,119 @@ task intakePID() {
 
 	}
 }
+int ticksLift;
+int liftTarget = SensorValue[lEncoder];
+//PID for intake
+task LiftPID() {
+	while(true) {
+		ticksLift = SensorValue[lEncoder];
+		errorLift = liftTarget - ticksLift;
+		integralLift = errorLift;
+
+		if(abs(integralLift) < ignoreDriveError) {
+			integralLift = 0;
+		}
+		if(abs(integralLift) > driveErrorMax) {
+			integralLift = 0;
+		}
+		int derivativeLift = errorLift - prevErrorLift;
+
+		prevErrorLift = errorLift;
+
+		armPo(liftKp * errorLift + liftKi * integralLift + liftKd * derivativelift);
+
+	}
+}
 //HI MIGGY
+/**************************AUTO*******************************************************/
+void encoderClear () {
+	nMotorEncoder[lF] = 0;
+	nMotorEncoder[lB] = 0;
+	nMotorEncoder[rB] = 0;
+	nMotorEncoder[rF] = 0;
+}
+
+void redSkyrise () {
+	motor[in] = 0;
+	int targetHeight = 500;
+	int threshold = 200;
+	bool hasReached = false;
+	//strafe away
+	while (abs(nMotorEncoder[rB]) < 1000) {
+		if(SensorValue[lineFollowBACK] > threshold && SensorValue[lineFollowFWD] > threshold) {
+			motor[rB] = -50;
+			motor[lB] = 50;
+			motor[rF] = 50;
+			motor[lF] = -50;
+		}
+		else if(SensorValue[lineFollowBACK] < threshold) {
+			motor[rB] = -40;
+			motor[lB] = 40;
+			motor[rF] = 60;
+			motor[lF] = -60;
+		}
+		else if(SensorValue[lineFollowFWD] < threshold) {
+			motor[rB] = -60;
+			motor[lB] = 60;
+			motor[rF] = 40;
+			motor[lF] = -40;
+		}
+	}
+	inPo(127);
+	wait1Msec(500);
+	inPo(32);
+	while(SensorValue[lEncoder] < targetHeight) {
+		armPo(127);
+	}
+	armPo(5);
+	//strafe to wall
+	while(abs(nMotorEncoder[rB]) < 1000) {
+		if(SensorValue[lineFollowBACK] > threshold && SensorValue[lineFollowFWD] > threshold) {
+			motor[rB] = +50;
+			motor[lB] = -50;
+			motor[rF] = -50;
+			motor[lF] = +50;
+		}
+		else if(SensorValue[lineFollowBACK] < threshold) {
+			motor[rB] = +40;
+			motor[lB] = -40;
+			motor[rF] = -60;
+			motor[lF] = +60;
+		}
+		else if(SensorValue[lineFollowFWD] < threshold) {
+			motor[rB] = +60;
+			motor[lB] = -60;
+			motor[rF] = -40;
+			motor[lF] = +40;
+		}
+		if(SensorValue[lineFollowEND] < threshold) {
+			hasReached = true;
+		}
+	}
+	//strafe to skyrise
+	while (abs(nMotorEncoder[rB]) < 1000) {
+		if(SensorValue[lineFollowBACK] > threshold && SensorValue[lineFollowFWD] > threshold) {
+			motor[rB] = -50;
+			motor[lB] = 50;
+			motor[rF] = 50;
+			motor[lF] = -50;
+		}
+		else if(SensorValue[lineFollowBACK] < threshold) {
+			motor[rB] = -40;
+			motor[lB] = 40;
+			motor[rF] = 60;
+			motor[lF] = -60;
+		}
+		else if(SensorValue[lineFollowFWD] < threshold) {
+			motor[rB] = -60;
+			motor[lB] = 60;
+			motor[rF] = 40;
+			motor[lF] = -40;
+		}
+	}
+}
+/**************************AUTO*******************************************************/
+
 /////////////////////////////////////////////////////////////////////////////////////////
 //
 //                          Pre-Autonomous Functions
@@ -235,7 +371,7 @@ void pre_auton()
 
 task autonomous()
 {
-	
+
 	redSkyrise();
 	//startTask(drivePID);
 	//driveIn(-10, 0, 0);
@@ -260,6 +396,7 @@ task usercontrol()
 	lfMult = 1;
 	startTask(drivePID);
 	startTask(intakePID);
+	startTask(armPID);
 
 	while (true)
 	{
@@ -279,7 +416,7 @@ task usercontrol()
 		}*/
 		if(abs(vexRT[Ch3]) > deadZone)
 		{
-			fwd = vexRT[Ch3];
+			fwd = vexRt[Ch3];
 		}
 		else {
 			fwd = 0;
@@ -290,7 +427,7 @@ task usercontrol()
 		}
 		if(abs(vexRT[Ch4]) > deadZone)
 		{
-			strafe = vexRT[Ch4];
+			strafe = vexRt[Ch4];
 		}
 		else {
 			strafe = 0;
@@ -301,7 +438,7 @@ task usercontrol()
 		}
 		if(abs(vexRT[Ch1]) > deadZone)
 		{
-			clockwise =  vexRT[Ch1];
+			clockwise =  vexRt[Ch1];
 		}
 		else {
 			clockwise = 0;
@@ -329,7 +466,7 @@ task usercontrol()
 			motor[hook] = 127/3;
 		}
 		else if(vexRT[Btn8R] == 1) {
-			motor[hook] = -127/3\;
+			motor[hook] = -127/3;
 		}
 		else {
 			motor[hook] = 0;
@@ -346,7 +483,19 @@ task usercontrol()
 		else if(!hasLockedIn) {
 			inTarget = ticksIn;
 			hasLockedIn = true;
+		}/*
+		if(vexRT[Btn5U] == 1) {
+			liftTarget = ticksLift + tickIncrease;
+			hasLockedLift = false;
 		}
+		else if(vexRT[Btn5D] == 1) {
+			LiftTarget = ticksLift - tickIncrease;
+			hasLockedLift = false;
+		}
+		else if(!hasLockedLift) {
+			liftTarget = ticksLift;
+			hasLockedLift = true;
+		}*/
 		//Simple PID free drive for testing
 		/*
 		motor[rB] = fwd - clockwise + strafe;
