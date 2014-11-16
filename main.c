@@ -128,10 +128,7 @@ void driveIn(int fwdDrive, int rDrive, int rotateDrive)
 void setHook(int po) {
 		motor[hook] = po;
 }
-//PID for arm
-task armPID() {
 
-}
 int errorRB;
 int errorLB;
 int errorRF;
@@ -231,7 +228,7 @@ task intakePID() {
 int ticksLift;
 int liftTarget = SensorValue[lEncoder];
 //PID for intake
-task LiftPID() {
+task armPID() {
 	while(true) {
 		ticksLift = SensorValue[lEncoder];
 		errorLift = liftTarget - ticksLift;
@@ -251,8 +248,6 @@ task LiftPID() {
 
 	}
 }
-//HI MIGGY
-/**************************AUTO*******************************************************/
 void encoderClear () {
 	nMotorEncoder[lF] = 0;
 	nMotorEncoder[lB] = 0;
@@ -260,84 +255,10 @@ void encoderClear () {
 	nMotorEncoder[rF] = 0;
 }
 
-void redSkyrise () {
-	motor[in] = 0;
-	int targetHeight = 500;
-	int threshold = 200;
-	bool hasReached = false;
-	//strafe away
-	while (abs(nMotorEncoder[rB]) < 1000) {
-		if(SensorValue[lineFollowBACK] > threshold && SensorValue[lineFollowFWD] > threshold) {
-			motor[rB] = -50;
-			motor[lB] = 50;
-			motor[rF] = 50;
-			motor[lF] = -50;
-		}
-		else if(SensorValue[lineFollowBACK] < threshold) {
-			motor[rB] = -40;
-			motor[lB] = 40;
-			motor[rF] = 60;
-			motor[lF] = -60;
-		}
-		else if(SensorValue[lineFollowFWD] < threshold) {
-			motor[rB] = -60;
-			motor[lB] = 60;
-			motor[rF] = 40;
-			motor[lF] = -40;
-		}
-	}
-	inPo(127);
-	wait1Msec(500);
-	inPo(32);
-	while(SensorValue[lEncoder] < targetHeight) {
-		armPo(127);
-	}
-	armPo(5);
-	//strafe to wall
-	while(abs(nMotorEncoder[rB]) < 1000) {
-		if(SensorValue[lineFollowBACK] > threshold && SensorValue[lineFollowFWD] > threshold) {
-			motor[rB] = +50;
-			motor[lB] = -50;
-			motor[rF] = -50;
-			motor[lF] = +50;
-		}
-		else if(SensorValue[lineFollowBACK] < threshold) {
-			motor[rB] = +40;
-			motor[lB] = -40;
-			motor[rF] = -60;
-			motor[lF] = +60;
-		}
-		else if(SensorValue[lineFollowFWD] < threshold) {
-			motor[rB] = +60;
-			motor[lB] = -60;
-			motor[rF] = -40;
-			motor[lF] = +40;
-		}
-		if(SensorValue[lineFollowEND] < threshold) {
-			hasReached = true;
-		}
-	}
-	//strafe to skyrise
-	while (abs(nMotorEncoder[rB]) < 1000) {
-		if(SensorValue[lineFollowBACK] > threshold && SensorValue[lineFollowFWD] > threshold) {
-			motor[rB] = -50;
-			motor[lB] = 50;
-			motor[rF] = 50;
-			motor[lF] = -50;
-		}
-		else if(SensorValue[lineFollowBACK] < threshold) {
-			motor[rB] = -40;
-			motor[lB] = 40;
-			motor[rF] = 60;
-			motor[lF] = -60;
-		}
-		else if(SensorValue[lineFollowFWD] < threshold) {
-			motor[rB] = -60;
-			motor[lB] = 60;
-			motor[rF] = 40;
-			motor[lF] = -40;
-		}
-	}
+//HI MIGGY
+/**************************AUTO*******************************************************/
+void redCube () {
+
 }
 /**************************AUTO*******************************************************/
 
@@ -371,11 +292,12 @@ void pre_auton()
 
 task autonomous()
 {
-
-	redSkyrise();
+	startTask(drivePID);
+	//redCube();
 	//startTask(drivePID);
-	//driveIn(-10, 0, 0);
-	fwd = -1000;
+	//driveIn(10, 0, 0);
+	strafe = -125;
+	//stopTask(drivePID);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -394,9 +316,9 @@ task usercontrol()
 	clearEncoders();
 	rfMult = 1;
 	lfMult = 1;
-	startTask(drivePID);
+	//startTask(drivePID);
 	startTask(intakePID);
-	startTask(armPID);
+	//startTask(armPID);
 
 	while (true)
 	{
@@ -413,7 +335,7 @@ task usercontrol()
 			motor[lB] = vexRT[Ch3] + vexRT[Ch1] - vexRT[Ch4];
 			motor[rF] = vexRT[Ch3] - vexRT[Ch1] - vexRT[Ch4];
 			motor[lF] = vexRT[Ch3] + vexRT[Ch1] + vexRT[Ch4];
-		}*/
+		}*//*
 		if(abs(vexRT[Ch3]) > deadZone)
 		{
 			fwd = vexRt[Ch3];
@@ -446,12 +368,12 @@ task usercontrol()
 			nMotorEncoder[lF] = 0;
 			nMotorEncoder[rB] = 0;
 			nMotorEncoder[rF] = 0;
-		}
-		/*
+		}*/
+
 		motor[rB] = vexRT[Ch3] - vexRT[Ch1] + vexRT[Ch4];
 		motor[lB] = vexRT[Ch3] + vexRT[Ch1] - vexRT[Ch4];
 		motor[rF] = vexRT[Ch3] - vexRT[Ch1] - vexRT[Ch4];
-		motor[lF] = vexRT[Ch3] + vexRT[Ch1] + vexRT[Ch4];*/
+		motor[lF] = vexRT[Ch3] + vexRT[Ch1] + vexRT[Ch4];
 
 		if(vexRT[Btn5U] == 1) {
 			armPo(127);
