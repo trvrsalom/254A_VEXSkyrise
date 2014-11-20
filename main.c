@@ -67,7 +67,7 @@ float strafe=0;
 float clockwise=0;
 
 int ignoreDriveError = 1;
-int driveErrorMax = 40;
+int driveErrorMax = 20;
 
 float integralLF = 0;
 float integralLB = 0;
@@ -258,7 +258,35 @@ void encoderClear () {
 //HI MIGGY
 /**************************AUTO*******************************************************/
 void redCube () {
-
+	while(SensorValue[lEncoder] > -660) {
+		armPo(127);
+	}
+	armPo(0);
+	clockwise=-370;
+	/*fwd=-85;
+	strafe = -85;
+	wait1Msec(1000);
+	//clockwise=-130;
+	wait1Msec(700);
+	fwd=-200;
+	clockwise=-130;
+	//strafe=75;
+	wait1Msec(700);*/
+	wait1Msec(2000);
+	fwd=-100;
+	while(SensorValue[lEncoder] < -50) {
+		armPo(-127);
+	}
+	armPo(-10);
+	fwd = 200;
+	wait1Msec(1000);
+	clockwise=200;
+	wait1Msec(1000);
+	fwd=1500;
+	wait1Msec(1000);
+	inPo(127);
+	wait1Msec(500);
+	inPo(0);
 }
 /**************************AUTO*******************************************************/
 
@@ -293,10 +321,10 @@ void pre_auton()
 task autonomous()
 {
 	startTask(drivePID);
-	//redCube();
+	redCube();
 	//startTask(drivePID);
 	//driveIn(10, 0, 0);
-	strafe = -125;
+	//strafe = -125;
 	//stopTask(drivePID);
 }
 
