@@ -263,15 +263,6 @@ void redCube () {
 	}
 	armPo(0);
 	clockwise=-370;
-	/*fwd=-85;
-	strafe = -85;
-	wait1Msec(1000);
-	//clockwise=-130;
-	wait1Msec(700);
-	fwd=-200;
-	clockwise=-130;
-	//strafe=75;
-	wait1Msec(700);*/
 	wait1Msec(2000);
 	fwd=-100;
 	while(SensorValue[lEncoder] < -50) {
@@ -287,7 +278,57 @@ void redCube () {
 	inPo(127);
 	wait1Msec(500);
 	inPo(0);
+	fwd=-1500;
+	wait1Msec(1000);
+	inPo(-127);
+  wait1Msec(500);
+  inPo(0);
+  fwd = -300;
 }
+
+void blueCube()
+{
+	while(SensorValue[lEncoder] > -660) {
+		armPo(127);
+	}
+	armPo(0);
+	clockwise=370;
+	wait1Msec(2000);
+	fwd=-100;
+	while(SensorValue[lEncoder] < -50) {
+		armPo(-127);
+	}
+	armPo(-10);
+	fwd = 200;
+	wait1Msec(1000);
+	clockwise=-200;
+	wait1Msec(1000);
+	fwd=1500;
+	wait1Msec(1000);
+	inPo(127);
+	wait1Msec(500);
+	inPo(0);
+	fwd=-1500;
+	wait1Msec(1000);
+	inPo(-127);
+  wait1Msec(500);
+  inPo(0);
+  fwd = -300;
+	
+}
+
+void floorAuto()
+{
+	fwd=1500;
+	wait1Msec(1000);
+	fwd=-1500;
+	wait1Msec(1000);
+	inPo(-127);
+  wait1Msec(500);
+  inPo(0);
+  fwd = -300;
+}
+
 /**************************AUTO*******************************************************/
 
 /////////////////////////////////////////////////////////////////////////////////////////
