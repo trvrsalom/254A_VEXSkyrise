@@ -3,6 +3,8 @@
 #pragma config(Sensor, in2,    lineFollowCENTER, sensorLineFollower)
 #pragma config(Sensor, in3,    lineFollowBACK, sensorLineFollower)
 #pragma config(Sensor, in4,    lineFollowEnd,  sensorLineFollower)
+#pragma config(Sensor, in7,    colorPot,        sensorPotentiometer)
+#pragma config(Sensor, in8,    modePot,       sensorPotentiometer)
 #pragma config(Sensor, dgtl1,  inEncoder,      sensorQuadEncoder)
 #pragma config(Sensor, dgtl3,  bottomLimit,    sensorTouch)
 #pragma config(Sensor, dgtl4,  lEncoder,       sensorQuadEncoder)
@@ -31,6 +33,11 @@
 
 #include "Vex_Competition_Includes.c"   //Main competition background code...do not modify!
 #include "gameAuto.h"
+
+int errorRB;
+int errorLB;
+int errorRF;
+int errorLF;
 
 int rfMult = -1;
 int lfMult = -1;
@@ -96,6 +103,10 @@ void clearEncoders () {
 	nMotorEncoder[rF] = 0;
 	nMotorEncoder[lF] = 0;
 	nMotorEncoder[lB] = 0;
+	errorLB = 0;
+	errorLF = 0;
+	errorRF = 0;
+	errorRB = 0;
 	sensorValue[lEncoder] = 0;
 }
 void inPo (int power) {
@@ -129,10 +140,7 @@ void setHook(int po) {
 		motor[hook] = po;
 }
 
-int errorRB;
-int errorLB;
-int errorRF;
-int errorLF;
+
 //PID for drive
 task drivePID() {
 	while(true) {
@@ -304,9 +312,9 @@ void blueCube()
 	clockwise=-200;
 	wait1Msec(1000);
 	fwd=1500;
-	wait1Msec(1000);
+	wait1Msec(1500);
 	inPo(127);
-	wait1Msec(500);
+	wait1Msec(1500);
 	inPo(0);
 	fwd=-1500;
 	wait1Msec(1000);
@@ -314,21 +322,60 @@ void blueCube()
   wait1Msec(500);
   inPo(0);
   fwd = -300;
-	
+
 }
 
 void floorAuto()
 {
 	fwd=1500;
 	wait1Msec(1000);
-	fwd=-1500;
-	wait1Msec(1000);
-	inPo(-127);
+	inPo(127);
+	wait1Msec(500);
+  inPo(0);
+  wait1Msec(500);
+  strafe=-100;
+  wait1Msec(500);
+  clockwise = -1500;
+  wait1Msec(5000);
+  clearEncoders();
+  fwd = 0;
+  strafe = 0;
+  clockwise = 0;
+  wait1Msec(500);
+  fwd=1500;
+  wait1Msec(1500);
+  inPo(-127);
   wait1Msec(500);
   inPo(0);
-  fwd = -300;
+  fwd = -500
+  
 }
 
+void blueSky() {
+	while(SensorValue[lEncoder] > -15) {
+		armPo(45);
+	}
+	armPo(0);
+	
+	fwd=200;
+	wait1Msec(1000);
+	while(SensorValue[lEncoder] > -200) {
+		armPo(127);
+	}
+	armPo(0);
+	wait1Msec(500);
+	fwd = -200;
+	wait1Msec(500);
+	strafe= 200;
+
+}
+void startIn() {
+	inPo(127);
+	wait1Msec(250);
+	inPo(-127);
+	wait1Msec(250);
+	inPo(0);
+}
 /**************************AUTO*******************************************************/
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -361,12 +408,26 @@ void pre_auton()
 
 task autonomous()
 {
+	clearEncoders();
 	startTask(drivePID);
-	redCube();
-	//startTask(drivePID);
-	//driveIn(10, 0, 0);
-	//strafe = -125;
-	//stopTask(drivePID);
+	startIn();
+	if((SensorValue[colorPot] > 3000) && (SensorValue[modePot] < 1000))
+	{
+		redCube();
+	}
+	else if((SensorValue[colorPot] < 1000)  && (SensorValue[modePot] < 1000))
+	{
+		blueCube();
+	}
+	else if((SensorValue[colorPot] < 1000)  && (SensorValue[modePot] > 1000))
+	{
+		floorAuto();
+	}
+	else if((SensorValue[modePot] > 1000))
+	{
+		floorAuto();
+	}
+	else{}
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -383,6 +444,7 @@ task usercontrol()
 {
 	// User control code here, inside the loop
 	clearEncoders();
+	stopTask(drivePID);
 	rfMult = 1;
 	lfMult = 1;
 	//startTask(drivePID);
