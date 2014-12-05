@@ -3,11 +3,13 @@
 #pragma config(Sensor, in2,    lineFollowCENTER, sensorLineFollower)
 #pragma config(Sensor, in3,    lineFollowBACK, sensorLineFollower)
 #pragma config(Sensor, in4,    lineFollowEnd,  sensorLineFollower)
-#pragma config(Sensor, in7,    colorPot,        sensorPotentiometer)
-#pragma config(Sensor, in8,    modePot,       sensorPotentiometer)
+#pragma config(Sensor, in7,    colorPot,       sensorPotentiometer)
+#pragma config(Sensor, in8,    modePot,        sensorPotentiometer)
 #pragma config(Sensor, dgtl1,  inEncoder,      sensorQuadEncoder)
 #pragma config(Sensor, dgtl3,  bottomLimit,    sensorTouch)
 #pragma config(Sensor, dgtl4,  lEncoder,       sensorQuadEncoder)
+#pragma config(Sensor, dgtl6,  clawSolenoid,   sensorDigitalOut)
+#pragma config(Sensor, dgtl7,  armSolenoid,    sensorDigitalOut)
 #pragma config(Sensor, I2C_1,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
 #pragma config(Sensor, I2C_2,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
 #pragma config(Sensor, I2C_3,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
@@ -33,6 +35,9 @@
 
 #include "Vex_Competition_Includes.c"   //Main competition background code...do not modify!
 #include "gameAuto.h"
+
+int armSVal = 0;
+int clawSVal = 0;
 
 int errorRB;
 int errorLB;
@@ -109,6 +114,13 @@ void clearEncoders () {
 	errorRB = 0;
 	sensorValue[lEncoder] = 0;
 }
+void clearDrive() {
+	nMotorEncoder[rB] = 0;
+	nMotorEncoder[rF] = 0;
+	nMotorEncoder[lF] = 0;
+	nMotorEncoder[lB] = 0;
+}
+
 void inPo (int power) {
 	motor[in] = power;
 }
@@ -348,7 +360,7 @@ void floorAuto()
   wait1Msec(500);
   inPo(0);
   fwd = -500
-  
+
 }
 
 void blueSky() {
@@ -356,7 +368,7 @@ void blueSky() {
 		armPo(45);
 	}
 	armPo(0);
-	
+
 	fwd=200;
 	wait1Msec(1000);
 	while(SensorValue[lEncoder] > -200) {
@@ -376,6 +388,7 @@ void startIn() {
 	wait1Msec(250);
 	inPo(0);
 }
+
 /**************************AUTO*******************************************************/
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -389,12 +402,7 @@ void startIn() {
 
 void pre_auton()
 {
-	// Set bStopTasksBetweenModes to false if you want to keep user created tasks running between
-	// Autonomous and Tele-Op modes. You will need to manage all user created tasks if set to false.
-	bStopTasksBetweenModes = true;
 
-	// All activities that occur before the competition starts
-	// Example: clearing encoders, setting servo positions, ...
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -408,10 +416,45 @@ void pre_auton()
 
 task autonomous()
 {
+	SensorValue[armSolenoid] = 0;
+	SensorValue[clawSolenoid] = 1;
+	inPo(50);
 	clearEncoders();
 	startTask(drivePID);
-	startIn();
-	if((SensorValue[colorPot] > 3000) && (SensorValue[modePot] < 1000))
+	//startIn();
+	while(SensorValue[lEncoder] < 185) armPo(127);
+	armPo(0);
+	SensorValue[armSolenoid] = 1;
+	wait1Msec(100);
+	SensorValue[clawSolenoid] = 0;
+	wait1Msec(500);
+	while(SensorValue[lEncoder] > 55) armPo(-127);
+	armPo(0);
+	wait1Msec(1000);
+	SensorValue[clawSolenoid] = 1;
+	wait1Msec(1000);
+	while(SensorValue[lEncoder] < 330) armPo(127);
+	armPo(0);
+
+	clockwise = 770;
+	wait1Msec(1000);
+
+	clearDrive();
+	clockwise=0;
+	fwd=95;
+	wait1Msec(500);
+	clearDrive();
+	clockwise=0;
+	fwd=0;
+	while(SensorValue[lEncoder] > 0) armPo(-127);
+	armPo(0);
+	wait1Msec(1000);
+	SensorValue[clawSolenoid] = 0;
+	wait1Msec(250);
+	while(SensorValue[lEncoder] < 250) armPo(127);
+	armPo(0);
+
+	/*if((SensorValue[colorPot] > 3000) && (SensorValue[modePot] < 1000))
 	{
 		redCube();
 	}
@@ -427,7 +470,7 @@ task autonomous()
 	{
 		floorAuto();
 	}
-	else{}
+	else{}*/
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -536,7 +579,32 @@ task usercontrol()
 		else if(!hasLockedIn) {
 			inTarget = ticksIn;
 			hasLockedIn = true;
-		}/*
+		}
+
+		bool lastClawS = false;
+		bool lastArmS = false;
+		if(vexRT[Btn7L] == 1 && clawSVal == 0 ) {
+			SensorValue[clawSolenoid] = 1;
+			wait1Msec(300);
+			clawSVal = 1;
+		}
+		else if(vexRT[Btn7L] == 1 && clawSVal == 1) {
+			SensorValue[clawSolenoid] = 0;
+			wait1Msec(300);
+			clawSVal = 0;
+		}
+		if(vexRT[Btn7R] == 1 && armSVal == 0) {
+			SensorValue[armSolenoid] = 1;
+			wait1Msec(300);
+			armSVal = 1;
+		}
+		else if(vexRT[Btn7R] == 1 && armSVal == 1) {
+			SensorValue[armSolenoid] = 0;
+			wait1Msec(300);
+			armSVal = 0;
+		}
+
+		/*
 		if(vexRT[Btn5U] == 1) {
 			liftTarget = ticksLift + tickIncrease;
 			hasLockedLift = false;
