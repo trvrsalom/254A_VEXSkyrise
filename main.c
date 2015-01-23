@@ -141,13 +141,19 @@ void armControl() {
 }
 
 void driveControl(float leftPo, float rightPo) {
-	driveSetRPt = SensorValue[rDriveEncoder] + rightPo;
-	driveSetLPt = SensorValue[lDriveEncoder] + leftPo;
+	motor[driveRB] = rightPo;
+	motor[driveRF] = rightPo;
+	motor[driveLB] = leftPo;
+	motor[driveLF] = leftPo;
 }
 
 void pre_auton()
 {
   bStopTasksBetweenModes = true;
+}
+
+void intakePo(float po) {
+	motor[intakeL] = motor[intakeR] = po;
 }
 
 task autonomous()
@@ -156,6 +162,7 @@ task autonomous()
 	startTask(drivePID);
 	//driveStream(true);
 	driveTicks(360);
+	stopTask(drivePID);
 }
 
 task usercontrol()
@@ -165,7 +172,6 @@ task usercontrol()
 	{
 
 		startTask(armPID);
-		startTask(drivePID);
 		//armStream(true);
 		driveControl(vexRt[Ch3] + vexRT[Ch1], vexRT[Ch3] - vexRT[Ch1]);
 		armControl();
