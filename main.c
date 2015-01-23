@@ -23,13 +23,13 @@
 #include "Vex_Competition_Includes.c"   //Main competition background code...do not modify!
 
 float ignoreDriveError = 40;
+float driveKp = 1.5;
 float driveKi = 0.0;
-float driveKp = 0.0;
 float driveKd = 0.0;
 
 float ignoreArmError = 40;
+float armKp = 10.0;
 float armKi = 0.0;
-float armKp = 0.0;
 float armKd = 0.0;
 
 bool toDriveStream = false;
@@ -41,11 +41,12 @@ float rError;
 float lError;
 float lDerivative;
 float rDerivative;
-float driveSetPt = 0;
+float driveSetLPt = 0;
+float driveSetRPt = 0;
 
 bool toArmStream = false;
 float rAPrevError = 0;
-float rAIntegral = 0; 
+float rAIntegral = 0;
 float lAPrevError = 0;
 float lAIntegral = 0;
 float rAError;
@@ -53,6 +54,14 @@ float lAError;
 float lADerivative;
 float rADerivative;
 float liftSetPt = 0;
+float lastLiftSetPt = 0;
+
+void init() {
+	SensorValue[rLiftEncoder] = 0;
+	SensorValue[lLiftEncoder] = 0;
+	SensorValue[rDriveEncoder] = 0;
+	SensorValue[lDriveEncoder] = 0;
+}
 
 task armPID() {
 	while(true) {
@@ -67,15 +76,15 @@ task armPID() {
 		motor[liftRB] = (armKp*RAError) + (armKi*RAIntegral) + (armKd*RADerivative);
 		motor[liftRT] = (armKp*RAError) + (armKi*RAIntegral) + (armKd*RADerivative);
 		if(toArmStream) {
-			writeDebugStream("%d,", rAError);
+			writeDebugStreamLine("%f,", rAError);
 		}
 	}
 }
 
 task drivePID() {
 	while(true) {
-		rError = driveSetPt - SensorValue[rDriveEncoder];
-		lError = driveSetPt - SensorValue[lDriveEncoder];
+		rError = driveSetRPt + SensorValue[rDriveEncoder];
+		lError = driveSetLPt - SensorValue[lDriveEncoder];
 		lIntegral += lError;
 		rIntegral += rError;
 		rDerivative = rError - rPrevError;
@@ -85,7 +94,7 @@ task drivePID() {
 		motor[driveLB] = (driveKp*lError) + (driveKi*lIntegral) + (driveKd*lDerivative);
 		motor[driveLF] = (driveKp*lError) + (driveKi*lIntegral) + (driveKd*lDerivative);
 		if(toDriveStream) {
-			writeDebugStream("%d,", rError);
+			writeDebugStreamLine("%f, %f,", rError, lError);
 		}
 	}
 }
@@ -99,18 +108,36 @@ void driveStream(bool set) {
 	toDriveStream = set;
 }
 
-void armStream(bool set) 
+void armStream(bool set)
 {
 	toArmStream = set;
 }
 
 void driveTicks(float ticks) {
-	driveSetPt += driveSetPt;	
+	driveSetRPt += ticks;
+	driveSetLPt += ticks;
+}
+
+void turnTicks(float ticks) {
+	driveSetRPt -= ticks;
+	driveSetLPt += ticks;
 }
 
 void intake(int po) {
 	motor[intakeR] = -po;
 	motor[intakeL] = po;
+}
+
+void armControl() {
+	if(vexRT[Btn6U]) {
+		liftSetPt = SensorValue[lLiftEncoder] + 10;
+	}
+	else if(vexRT[Btn6D]) {
+		liftSetPt = SensorValue[lLiftEncoder] - 10;
+	}
+	else {
+		liftSetPt = SensorValue[lLiftEncoder];
+	}
 }
 
 void pre_auton()
@@ -120,13 +147,17 @@ void pre_auton()
 
 task autonomous()
 {
-	
+	init();
+	startTask(drivePID);
+	driveStream(true);
+	driveTicks(360);
 }
 
 task usercontrol()
 {
 	while (true)
 	{
-	  setDrive(vexRT[Ch3], vexRT[ch2]);
+	  //setDrive(vexRT[Ch3], vexRT[ch2]);
+		armControl();
 	}
 }
