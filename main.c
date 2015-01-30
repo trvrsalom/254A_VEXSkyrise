@@ -1,3 +1,5 @@
+#pragma config(Sensor, in1,    autoPot,        sensorPotentiometer)
+#pragma config(Sensor, in2,    posPot,         sensorPotentiometer)
 #pragma config(Sensor, dgtl1,  rDriveEncoder,  sensorQuadEncoder)
 #pragma config(Sensor, dgtl3,  rLiftEncoder,   sensorQuadEncoder)
 #pragma config(Sensor, dgtl5,  lDriveEncoder,  sensorQuadEncoder)
@@ -167,10 +169,20 @@ void intakePo(float po) {
 	motor[intakeR] = po;
 }
 
+void deploy() {
+	liftSetPt = -30;
+	wait1Msec(1000);
+	intakePo(-127);
+	wait1Msec(500);
+	liftSetpt = -5;
+	wait1Msec(1000);
+}
+
+
 void blueSmallAuto() {
  driveTicks(-395);
  wait1Msec(1500);
- //wait1Msec(1000);
+ deploy();
  turnTicks(-125);
  wait1Msec(1000);
  liftSetPt = -60;
@@ -180,16 +192,64 @@ void blueSmallAuto() {
  driveTicks(-200);
 }
 
+void redSmallAuto() {
+ driveTicks(-395);
+ wait1Msec(1500);
+ deploy();
+ turnTicks(125);
+ wait1Msec(1000);
+ liftSetPt = -60;
+ wait1Msec(1000);
+ intakePo(127);
+ wait1Msec(1000);
+ driveTicks(-200);
+}
+
 void blueTallAuto() {
+	deploy();
 	intakePo(-127);
 	wait1Msec(500);
-	driveTicks(720);
+	driveTicks(750);
+	wait1Msec(3000);
+	turnTicks(410);
 	wait1Msec(1000);
-	turnTicks(330);
-	wait1Msec(1000);
-	driveTicks(520);
+	driveTicks(900);
+	wait1Msec(1500);
+	turnTicks(370);
 	wait1Msec(2000);
-	turnTicks(335);
+	driveTicks(-70);
+	wait1Msec(500);
+	liftSetPt = -100;
+	wait1Msec(1500);
+	turnTicks(-70);
+	wait1Msec(1000);
+	driveTicks(85);
+	wait1Msec(1000);
+	intakePo(127);
+}
+
+void redTallAuto() {
+	deploy();
+	intakePo(-127);
+	wait1Msec(500);
+	driveTicks(750);
+	wait1Msec(3000);
+	turnTicks(-390);
+	wait1Msec(1000);
+	driveTicks(880);
+	wait1Msec(1500);
+	turnTicks(-385);
+	wait1Msec(2000);
+	driveTicks(-65);
+	wait1Msec(500);
+	liftSetPt = -100;
+	wait1Msec(1500);
+	driveTicks(120);
+	wait1Msec(1000);
+	intakePo(127);
+	wait1Msec(1000);
+	driveTicks(-30);
+	wait1Msec(1000);
 }
 
 void intakeControl() {
@@ -199,6 +259,28 @@ void intakeControl() {
 		intakePo(-127);
 	else
 		intakePo(0);
+}
+
+
+void autonSelector() {
+	if(SensorValue[posPot] <=2000) {
+		if(SensorValue[autoPot] <= 1500) {
+			blueSmallAuto();
+		}
+		else if(SensorValue[autoPot] >= 2500) {
+			redSmallAuto();
+		}
+		else {}
+	}
+	else if(SensorValue[posPot] >= 2000) {
+		if(SensorValue[autoPot] <= 1500) {
+			blueTallAuto();
+		}
+		else if(SensorValue[autoPot] >= 2500) {
+			redTallAuto();
+		}
+		else {}
+	}
 }
 
 void pre_auton()
@@ -212,7 +294,7 @@ task autonomous()
 	init();
 	startTask(drivePID);
 	startTask(armPID);
-	blueTallAuto();
+	redTallAuto();
   //blueSmallAuto();
 	//stopTask(drivePID);
 	//stopTask(armPID);
@@ -221,6 +303,7 @@ task autonomous()
 task usercontrol()
 {
 	init();
+	deploy();
 	while (true)
 	{
 		startTask(armPID);
