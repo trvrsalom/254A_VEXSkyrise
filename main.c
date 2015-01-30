@@ -65,6 +65,8 @@ float liftSetPt = 0;
 int lLiftModifier = -1;
 float lastLiftSetPt = 0;
 
+
+
 void init() {
 	SensorValue[rLiftEncoder] = 0;
 	SensorValue[lLiftEncoder] = 0;
@@ -80,10 +82,10 @@ task armPID() {
 		rAIntegral += rAError;
 		rADerivative = rAError - rAPrevError;
 		lDerivative = lAError - lAPrevError;
-		motor[liftLB] = (armKp*lAError) + (armKi*lAIntegral) + (armKd*lADerivative);
-		motor[liftLT] = (armKp*lAError) + (armKi*lAIntegral) + (armKd*lADerivative);
-		motor[liftRB] = (armKp*RAError) + (armKi*RAIntegral) + (armKd*RADerivative);
-		motor[liftRT] = (armKp*RAError) + (armKi*RAIntegral) + (armKd*RADerivative);
+		motor[liftLB] = ((armKp*lAError) + (armKi*lAIntegral) + (armKd*lADerivative))/precisionMode;
+		motor[liftLT] = ((armKp*lAError) + (armKi*lAIntegral) + (armKd*lADerivative))/precisionMode;
+		motor[liftRB] = ((armKp*RAError) + (armKi*RAIntegral) + (armKd*RADerivative))/precisionMode;
+		motor[liftRT] = ((armKp*RAError) + (armKi*RAIntegral) + (armKd*RADerivative))/precisionMode;
 		if(toArmStream) {
 			writeDebugStreamLine("%f, %f,",lAError, rAError);
 		}
@@ -138,15 +140,15 @@ void intake(int po) {
 }
 
 void armControl() {
-	if(Btn7L)
-		precisionMode = 3;
-  else
+	if(vexRT[Btn8D])
+		precisionMode = 8;
+  else if(!vexRT[Btn8D])
   	precisionMode = 1;
 	if(vexRT[Btn6D]) {
-		liftSetPt = SensorValue[rLiftEncoder] + (40/precisionMode);
+		liftSetPt = SensorValue[rLiftEncoder] + (40);
 	}
 	else if(vexRT[Btn6U]) {
-		liftSetPt = SensorValue[rLiftEncoder] - (40/precisionMode);
+		liftSetPt = SensorValue[rLiftEncoder] - (40);
 	}
 	else {
 		liftSetPt = SensorValue[rLiftEncoder] - 1;
@@ -303,7 +305,6 @@ task autonomous()
 task usercontrol()
 {
 	init();
-	deploy();
 	while (true)
 	{
 		startTask(armPID);
