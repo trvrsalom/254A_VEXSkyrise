@@ -36,6 +36,7 @@ float armKp = 10.0;
 float armKi = 0.0;
 float armKd = 0.0;
 
+bool precise = false;
 float precisionMode = 1;
 
 bool toDriveStream = false;
@@ -140,15 +141,18 @@ void intake(int po) {
 }
 
 void armControl() {
-	if(vexRT[Btn8D])
+	if(vexRT[Btn8D] && precisionMode == 1)
 		precisionMode = 8;
-  else if(!vexRT[Btn8D])
+  else if(!vexRT[Btn8D] && precisionMode == 8)
   	precisionMode = 1;
 	if(vexRT[Btn6D]) {
 		liftSetPt = SensorValue[rLiftEncoder] + (40);
 	}
 	else if(vexRT[Btn6U]) {
 		liftSetPt = SensorValue[rLiftEncoder] - (40);
+	}
+	else if(vexRT[Btn7D]) {
+		liftSetPt = SensorValue[rLiftEncoder] + (2);
 	}
 	else {
 		liftSetPt = SensorValue[rLiftEncoder] - 1;
@@ -260,7 +264,7 @@ void intakeControl() {
 	else if(vexRT[Btn5D])
 		intakePo(-127);
 	else
-		intakePo(0);
+		intakePo(-32);
 }
 
 
